@@ -1,0 +1,45 @@
+#!/bin/sh
+
+if [[ $(/usr/bin/id -u) -ne 0 ]]; then
+    echo "This script must be run as root"
+    exit -1
+fi
+
+nextHiddenGroupID() {
+    for id in $(dscl . -list /Groups PrimaryGroupID | awk '{print $2}' | sort -ugr); do
+        [[ id -lt 499 ]] && break
+    done
+    echo $((id + 1))
+}
+
+nextHiddenUserID() {
+    for id in $(dscl . -list /Users UniqueID | awk '{print $2}' | sort -ugr); do
+        [[ id -lt 499 ]] && break
+    done
+    echo $((id + 1))
+}
+
+if ! dscl . -read /Groups/_splunk 2>/dev/null >/dev/null; then
+    gid=$(nextHiddenGroupID)
+    echo creating the group _splunk as gid $gid
+    dseditgroup -o create -i $gid -r "Splunk Group" _splunk || exit -1
+    dscl . -append /Groups/_splunk RecordName splunk
+fi
+# to delete: `dscl . -delete /Groups/_splunk`
+
+if ! dscl . -read /Users/_splunk 2>/dev/null >/dev/null; then
+    uid=$(nextHiddenUserID)
+    gid=$(dscl . -read /Groups/_splunk PrimaryGroupID | awk '{print $2}')
+    echo creating the user _splunk as uid $uid
+    dscl . -create /Users/_splunk || exit -1
+    dscl . -create /Users/_splunk UserShell /usr/bin/false
+    dscl . -create /Users/_splunk RealName "Splunk User"
+    dscl . -create /Users/_splunk UniqueID "$uid"
+    dscl . -create /Users/_splunk PrimaryGroupID $gid
+    dscl . -create /Users/_splunk NFSHomeDirectory /var/empty
+    dscl . -create /Users/_splunk IsHidden 1
+    dscl . -append /Users/_splunk RecordName splunk
+fi
+# to delete: `dscl . -delete /Users/_splunk`
+
+exit 0

@@ -1,0 +1,53 @@
+# Inspired by gerardkok
+Description: 'Creates a configurable SplunkForwarder installer package.'
+Identifier: com.github.gallen.pkg.SplunkForwarder
+Input:
+  NAME: SplunkForwarder
+  PKG_ID: com.splunk.splunkforwarder
+  SPLUNK_LOCAL: splunk_local
+MinimumVersion: 0.3.1
+ParentRecipe: com.github.download.pkg.SplunkForwarder
+Process:
+- Processor: PkgRootCreator
+  Arguments:
+    pkgroot: '%RECIPE_CACHE_DIR%/%NAME%'
+    pkgdirs:
+      payload: '0755'
+      payload/opt: '0755'
+- Processor: Unarchiver
+  Arguments:
+    destination_path: '%RECIPE_CACHE_DIR%/%NAME%/payload/opt'
+- Processor: Copier
+  Arguments:
+    source_path: '%SPLUNK_LOCAL%/deploymentclient.conf'
+    destination_path: '%RECIPE_CACHE_DIR%/%NAME%/payload/opt/splunkforwarder/etc/system/local/'
+- Processor: Copier
+  Arguments:
+    source_path: '%SPLUNK_LOCAL%/user-seed.conf'
+    destination_path: '%RECIPE_CACHE_DIR%/%NAME%/payload/opt/splunkforwarder/etc/system/local/'
+# Configure `SPLUNK_HOME.path` for `Splunk.app`,
+- Processor: FileCreator
+  Arguments:
+    file_path: '%RECIPE_CACHE_DIR%/%NAME%/payload/opt/splunkforwarder/bin/Splunk.app/Contents/Resources/SPLUNK_HOME.path'
+    file_content: /opt/splunkforwarder
+# Remove the broken `Splunk.app` to avoid temptation.
+- Processor: PathDeleter
+  Arguments:
+    path_list: ['%RECIPE_CACHE_DIR%/%NAME%/payload/opt/splunkforwarder/bin/Splunk.app/']
+- Processor: PkgCreator
+  Arguments:
+    pkg_request:
+      pkgroot: '%RECIPE_CACHE_DIR%/%NAME%/payload'
+      pkgdir: '%RECIPE_CACHE_DIR%'
+      pkgname: '%NAME%-%version%'
+      id: '%PKG_ID%'
+      version: '%version%'
+      options: purge_ds_store
+      scripts: scripts
+      chown:
+      - path: opt/splunkforwarder
+        user: root
+        group: wheel
+- Processor: PathDeleter
+  Arguments:
+    path_list: ['%RECIPE_CACHE_DIR%/%NAME%']

@@ -1,0 +1,15 @@
+# Inspired by gerardkok
+Description: 'Downloads the latest version of SplunkUniversal Forwarder.'
+Identifier: com.github.download.pkg.SplunkForwarder
+Input:
+  NAME: SplunkForwarder
+MinimumVersion: 0.4.0
+Process:
+- Processor: URLTextSearcher
+  Arguments:
+    url: 'https://www.splunk.com/en_us/download/universal-forwarder.html'
+    re_pattern: 'data-link=\"(?P<url>https://.*?/products/universalforwarder/releases/(?P<version>[0-9\.]+)/osx/splunkforwarder-[0-9\.]+-[0-9a-f]+-darwin-universal2.tgz)\"'
+- Processor: URLDownloader
+  Arguments:
+    filename: '%NAME%.tgz'
+- Processor: EndOfCheckPhase
