@@ -9,9 +9,8 @@ fi
 dscl . -read /Groups/_splunk 2>/dev/null >/dev/null && \
 dscl . -read /Users/_splunk 2>/dev/null >/dev/null || exit -1
 
-# set ownership and setuid+setgid bits
+# set ownership
 chown -R splunk:splunk /opt/splunkforwarder
-chmod ug+s /opt/splunkforwarder/bin/splunk
 
 # kill any running splunkd
 [ ! -z "$(pgrep splunkd)" ] && killall splunkd
